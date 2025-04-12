@@ -53,7 +53,7 @@ class RMSNorm(torch.nn.Module):
         Returns:
             torch.Tensor: The normalized tensor.
         """
-        # todo
+
         rms = self._rms(x)
         return x / rms # note: even though the equation uses g, Im not gonna put it here cause self.weight is already added in the next equation
 
@@ -107,7 +107,7 @@ class Attention(nn.Module):
         Make sure to use attention_dropout (self.attn_dropout) on the computed
         attention matrix before applying it to the value tensor.
         '''
-        # todo
+
 
         dk = key.shape[-1]
         k = key.transpose(-2, -1) # keeps batch size same but switches sequence and embed dim
@@ -270,6 +270,8 @@ class Llama(LlamaPreTrainedModel):
 
     def forward(self, tokens: torch.Tensor, targets: Optional[torch.Tensor] = None) -> torch.Tensor:
         _batch_size, seqlen = tokens.shape
+
+        # this function really doesnt seem to do anything useful. Why is there no attention here. Thats odd
         h = self.tok_embeddings(tokens)
         h = self.dropout(h)
 
