@@ -30,6 +30,16 @@ class RMSNorm(torch.nn.Module):
         self.eps = eps
         self.weight = nn.Parameter(torch.ones(dim))
 
+
+    def _rms(self, x):
+        print("the shape of x inside rms")
+        print(x.shape)
+        return torch.sqrt(torch.mean(x ** 2, dim=-1,
+                                     keepdim=True) + self.eps)  # dim one ensures we get the means across each sentence length
+
+
+
+
     def _norm(self, x):
         """
         Compute the root mean square normalization. Use Equation 4 under
@@ -44,7 +54,11 @@ class RMSNorm(torch.nn.Module):
             torch.Tensor: The normalized tensor.
         """
         # todo
-        raise NotImplementedError
+        rms = self._rms(x)
+        return x / rms # note: even though the equation uses g, Im not gonna put it here cause self.weight is already added in the next equation
+
+
+
 
     def forward(self, x):
         """
@@ -94,8 +108,15 @@ class Attention(nn.Module):
         attention matrix before applying it to the value tensor.
         '''
         # todo
-        raise NotImplementedError
 
+        dk = key.shape[-1]
+        k = key.transpose(-2, -1) # keeps batch size same but switches sequence and embed dim
+
+        score = torch.matmul(query, k)
+        scaled_score = score/torch.sqrt(dk)
+        probs = torch.softmax(scaled_score, dim=-1)
+        attention_out = torch.matmul(probs,value)
+        return attention_out
     def forward(
         self,
         x: torch.Tensor
@@ -196,8 +217,17 @@ class LlamaLayer(nn.Module):
         5) add a residual connection from the unnormalized self-attention output to the
            output of the feed-forward network
         '''
-        # todo
-        raise NotImplementedError
+        x_norm = self.attention_norm(x)
+        attention_out = self.attention(x_norm)
+        resid1 = attention_out + x_norm # not sure if this should be x or x_norm
+        # comment seems to imply x_norm though
+        ffn_norm = self.ffn_norm(resid1)
+        ffn_out = self.feed_forward(ffn_norm)
+        resid2 = resid1 + ffn_out
+        return resid2
+
+
+
 
 class Llama(LlamaPreTrainedModel):
     def __init__(self, config: LlamaConfig):

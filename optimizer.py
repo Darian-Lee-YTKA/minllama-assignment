@@ -46,11 +46,44 @@ class AdamW(Optimizer):
                 # Access hyperparameters from the `group` dictionary
                 alpha = group["lr"]
 
-                # Update first and second moments of the gradients
+                # gonna try and make the equation
+                #mt = B1mt-1 + (1-B1)gt where gt is the gradient, mt = first moment (mean)
+                # but its not really mean because it starts at 0 and gets updated in this funky way
+                # the betas seem to control how much influence the gradients have in updating the new moment.
+                #B1 is .9, so the new moment is only .1 influenced by the gradients. Its like a weighted average
+                # probably means something in physics
+                if "m" not in state:
+                    state["m"] = torch.zeros_like(p.data) # we initialize to 0s
+                b1 = self.betas[0]
+
+                mt_1 = state["m"] # the prev momentum
+                mt = b1 * mt_1 + (1-b1) * grad
+
+
+
 
                 # Bias correction
                 # Please note that we are using the "efficient version" given in
                 # https://arxiv.org/abs/1412.6980
+
+                # ok so now we want
+                # vt = b2 * vt-1 + (1-b2) * g^2
+                # ok yeah this is quite similar just for the second moment
+                if "v" not in state:
+                    state["v"] = torch.zeros_like(p.data) # we initialize to 0s
+                b2 = self.betas[1]
+
+                vt_1 = state["v"] # the prev second moment
+                vt = b2 * vt_1 + (1-b2) * grad**2
+
+
+                # I think we save before tinkering
+                state["m"] = mt
+                state["v"] = vt
+                # now looks like we correct our biases and become more compasionate scientists
+                m_bar_t = mt / (1-b1**t) # hmm. This is actually a really big difference. Im not sure wh we do this. I will research it
+                v_bar_t = vt / (1-b2**t)
+
 
                 # Update parameters
 
