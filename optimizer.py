@@ -45,6 +45,10 @@ class AdamW(Optimizer):
 
                 # Access hyperparameters from the `group` dictionary
                 alpha = group["lr"]
+                if "step" not in state:
+                    state["step"] = 0
+                state["step"] += 1
+                t = state["step"] # our timesteps
 
                 # gonna try and make the equation
                 #mt = B1mt-1 + (1-B1)gt where gt is the gradient, mt = first moment (mean)
@@ -52,6 +56,10 @@ class AdamW(Optimizer):
                 # the betas seem to control how much influence the gradients have in updating the new moment.
                 #B1 is .9, so the new moment is only .1 influenced by the gradients. Its like a weighted average
                 # probably means something in physics
+                # oh wait yeah that makes sense. Its like the current is even more important than it would be in the mean cause its always 10% regardless of how many other values
+                # because the derivative tells the slope of that change, if the previous ms were large it will styay large and vice versa
+                # ok yeah this makes sense how its intuitively momentum
+                # Hurrah I have cracked the case! Darian out! 🥚🍳😎
                 if "m" not in state:
                     state["m"] = torch.zeros_like(p.data) # we initialize to 0s
                 b1 = self.betas[0]
@@ -83,6 +91,25 @@ class AdamW(Optimizer):
                 # now looks like we correct our biases and become more compasionate scientists
                 m_bar_t = mt / (1-b1**t) # hmm. This is actually a really big difference. Im not sure wh we do this. I will research it
                 v_bar_t = vt / (1-b2**t)
+
+                # ok, now we need
+                # Ot = Ot-1 - a * m_hat_t / ( torch.sqrt(v_hat_t) + e. alpha is learning rate.
+                # this is interesting because it seems like the updates are a lot more affected by past gradients than they are by current ones
+                # ohhh v is probably velocity, that makes sense
+                # oh wait no, silly Darian you! ok v is variance. I knew that
+                # oh ok that makes sense. Its scalling it by accumlilated variance so that some parameters will update more than others
+                # if the variance is less stable, the update will be smaller so that we reduce bouncing around
+                # its like doing down a narrow canyon.
+                # nailed it! woo! letzzz go
+                update = m_bar_t / (v_bar_t.sqrt() + group["eps"])
+
+
+                if group["weight_decay"] != 0.0:
+                    update += weight_decay * p.data
+
+
+                p.data -= lr * update
+
 
 
                 # Update parameters
