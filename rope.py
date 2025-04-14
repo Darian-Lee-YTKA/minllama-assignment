@@ -65,7 +65,7 @@ def apply_rotary_emb(
     # query_real contains q_1, q_3, q_5, ... and query_imag contains q_2, q_4, q_6, ...
 
     # ok, so together, real and imaginary create these pairs. that checks out
-    theta_i = torch.arange(1, query_d //2,dtype=torch.float, device=device) # from the part 0 = {0i = 10000^-2(i-1)/d, i € [1,2,.., d/2]}.
+    theta_i = torch.arange(1, query_d //2+1,dtype=torch.float, device=device) # from the part 0 = {0i = 10000^-2(i-1)/d, i € [1,2,.., d/2]}.
     # basically going from 1 to 1/2 of d
 
     thetas = theta**(-2 * (theta_i - 1) / query_d) # this should be the same dimension as keys, or else attention doesnt make sese
@@ -80,11 +80,16 @@ def apply_rotary_emb(
     m_q = torch.arange(0, query.shape[1], dtype=torch.float, device=device) # query seq_len
     n_k = torch.arange(0, key.shape[1], dtype=torch.float, device=device) # k seq_len
     # yes I am aware that they wil be the same but the point is robustness and easiness on the eyes
-
-    thetas_doubled = torch.repeat_interleave(thetas, repeats=2, dim=0) # not sure if this is efficent, but I am following the formula
+    thetas_doubled = thetas
+    #thetas_doubled = torch.repeat_interleave(thetas, repeats=2, dim=0) # not sure if this is efficent, but I am following the formula
+    print(thetas)
+    print(thetas_doubled)
     # this is the embed dim of the q and k
     angles_key = torch.einsum("i,j->ij", n_k, thetas_doubled)  # [seq_len, head_dim]
+
+
     angles_query = torch.einsum("i,j->ij", m_q, thetas_doubled)
+
     # this will create a matrix of their products
     # so the first row will be thetas_doubled * first m_q (0)
     # then thetas_doubled * first m_q (0) * 1
@@ -97,22 +102,26 @@ def apply_rotary_emb(
     key_cos = angles_key.cos()
     key_sin = angles_key.sin()
 
-    query_cos = angles_key.cos() # these 2 things (key, query) might be equal. Its my code and I get to make equal things if I want
-    query_sin = angles_key.sin()
+    query_cos = angles_query.cos() # these 2 things (key, query) might be equal. Its my code and I get to make equal things if I want
+    query_sin = angles_query.sin()
 
     # ok ok now we are getting to the finally!
 
     real_q_out = query_real * query_cos - query_imag * query_sin
+    print("real_q_out: ", real_q_out)
     imag_q_out = query_real * query_sin + query_imag * query_cos
-
+    print("imag_q_out: ", imag_q_out)
     real_k_out = key_real * key_cos - key_imag * key_sin
+
     imag_k_out = key_real * key_sin + key_imag * key_cos
+
     query_out = torch.stack([real_q_out, imag_q_out], dim=-1).reshape_as(query)
     key_out = torch.stack([real_k_out, imag_k_out], dim=-1).reshape_as(key)
 
     # I Am absoluely crushing it I feel like! I hope this works
 
-
+    # real is correct
+    # image is incorrect
 
 
     return query_out, key_out
