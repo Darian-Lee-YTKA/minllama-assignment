@@ -2,11 +2,9 @@ from contextlib import nullcontext
 import json
 import time, random, numpy as np, argparse, sys, re, os
 from types import SimpleNamespace
-
 import torch
-import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
-from sklearn.metrics import classification_report, f1_score, recall_score, accuracy_score
+
 
 # change it with respect to the original model
 from classifier import LlamaZeroShotClassifier, LlamaEmbeddingClassifier

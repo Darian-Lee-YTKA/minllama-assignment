@@ -56,20 +56,25 @@ def apply_rotary_emb(
     # and Section 3 in https://arxiv.org/abs/2104.09864.
 
     # reshape xq and xk to match the complex representation
-    query_real, query_imag = query.float().reshape(query.shape[:-1] + (-1, 2)).unbind(-1)
-    key_real, key_imag = key.float().reshape(key.shape[:-1] + (-1, 2)).unbind(-1)
+    query_d = query.shape[:-1]
+    key_d = key.shape[:-1]
+    query_real, query_imag = query.float().reshape(query_d + (-1, 2)).unbind(-1)
+    key_real, key_imag = key.float().reshape(key_d + (-1, 2)).unbind(-1)
+
     # This separates each query/key vector into its odd and even indices (assuming *one-indexing*).
     # query_real contains q_1, q_3, q_5, ... and query_imag contains q_2, q_4, q_6, ...
 
-    # First, compute the trigonometric values in the second and fourth columns in
-    # slide 22 (linked above).
+    # ok, so together, real and imaginary create these pairs. that checks out
+    theta_is = torch.arange(1, query_d //2,dtype=torch.float, device=device) # from the part 0 = {0i = 10000^-2(i-1)/d, i € [1,2,.., d/2]}.
+    # basically going from 1 to 1/2 of d
 
-    # Then, combine these trigonometric values with the tensors query_real, query_imag,
-    # key_real, and key_imag.
+    thetas = theta**(-2(theta_is-1)/ query_d) # this should be the same dimension as keys, or else attention doesnt make sese
+    # following the equation on page 5
+    # 0 = {0i = 10000^-2(i-1)/d, i € [1,2,.., d/2]}
+    # I think Im doing ok so far, go Darian
 
-    raise NotImplementedError
 
-    query_out = None
-    key_out = None
-    # Return the rotary position embeddings for the query and key tensors
+
+
+
     return query_out, key_out

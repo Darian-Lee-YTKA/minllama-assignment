@@ -1,0 +1,12 @@
+# Ignore Python virtual environment "hellhole"
+hellhole/
+
+# Ignore bytecode and Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore IDE/editor configuration files
+.idea/
+.vscode/
